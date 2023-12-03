@@ -1,0 +1,22 @@
+# Compiled files
+/target/
+*.o
+*.out
+*.obj
+
+# macOS system files
+.DS_Store
+
+# Go binaries and packages
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Rust binaries and build directories
+/target/
+
+# Miscellaneous
+*.swp
+Thumbs.db
+
