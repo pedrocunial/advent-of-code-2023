@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 trait Valid {
     fn is_valid(&self, game: &Box<Vec<&str>>) -> bool;
 }
@@ -81,8 +83,66 @@ fn play(lines: Vec<&str>) -> i32 {
         .sum()
 }
 
+fn build_map(lines: Vec<&str>) -> HashMap<usize, Vec<(usize, usize)>> {
+    extract_ranges(lines).into_iter().fold(
+        HashMap::new(),
+        |mut map: HashMap<usize, Vec<(usize, usize)>>, (l, b, e)| {
+            if map.contains_key(&l) {
+                map.get_mut(&l).unwrap().push((b, e));
+            } else {
+                map.insert(l, vec![(b, e)]);
+            }
+            map
+        },
+    )
+}
+
+fn check_ranges(line_idx: usize, cidx: usize, map: &HashMap<usize, Vec<(usize, usize)>>) -> bool {
+    map[&line_idx].iter().any(|(b, e)| *b <= cidx && *e >= cidx)
+}
+
+fn check_around(line_idx: usize, cidx: usize, map: &HashMap<usize, Vec<(usize, usize)>>) -> bool {
+    let mut count = 0;
+    let top = if line_idx == 0 {
+        false
+    } else {
+        check_ranges(line_idx - 1, cidx, &map)
+    };
+    let bottom = if line_idx == map.len() - 1 {
+        false
+    } else {
+        check_ranges(line_idx + 1, cidx, &map)
+    };
+    let before = if cidx == 0 {
+        false
+    } else {
+        check_ranges(line_idx, cidx - 1, &map)
+    };
+    let after = if cidx == map[&line_idx].len() - 1 {
+        false
+    } else {
+        check_ranges(line_idx, cidx + 1, &map)
+    };
+
+    top || bottom || before || after
+}
+
+fn play2(lines: Vec<&str>) -> i32 {
+    let game = Box::new(lines.clone());
+    let map = build_map(lines);
+    for (line_idx, row) in game.iter().enumerate() {
+        for (cidx, c) in row.chars().enumerate() {
+            if c == '*' {
+                check_around(line_idx, cidx, &map);
+            }
+        }
+    }
+
+    0
+}
+
 fn main() {
-    let contents = std::fs::read_to_string("data/input.txt").unwrap();
+    let contents = std::fs::read_to_string("data/test.txt").unwrap();
     let result = play(contents.lines().collect());
     dbg!(result);
 }
