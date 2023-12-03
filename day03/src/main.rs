@@ -40,13 +40,11 @@ impl Valid for (usize, usize, usize) {
         let after = check_line(line, end - 1, end, game);
         let bottom = check_line(line + 1, beg, end, game);
 
-        dbg!(self);
-        dbg!(top || before || after || bottom)
+        top || before || after || bottom
     }
 }
 
 fn check_line(line_idx: i32, beg_idx: i32, end_idx: i32, game: &Box<Vec<&str>>) -> bool {
-    dbg!(line_idx, beg_idx, end_idx);
     let usized_line_idx: usize = match line_idx.try_into() {
         Ok(value) => value,
         Err(_) => return false,
@@ -60,7 +58,7 @@ fn check_line(line_idx: i32, beg_idx: i32, end_idx: i32, game: &Box<Vec<&str>>) 
         .try_into()
         .unwrap();
 
-    game[usized_line_idx][dbg!(beg..end)]
+    game[usized_line_idx][beg..end]
         .chars()
         .any(|c| c.is_symbol())
 }
@@ -93,7 +91,7 @@ fn play(lines: Vec<&str>) -> i32 {
     extract_ranges(lines)
         .iter()
         .filter(|r| r.is_valid(&game))
-        .map(|(lineidx, beg, end)| dbg!(game[*lineidx][*beg..*end].parse::<i32>().unwrap()))
+        .map(|(lineidx, beg, end)| game[*lineidx][*beg..*end].parse::<i32>().unwrap())
         .sum()
 }
 
@@ -123,9 +121,9 @@ fn check_point(
 
     map.get(&(x as usize))
         .map(|ranges| {
-            dbg!(ranges
+            ranges
                 .iter()
-                .find(|(beg, end)| *beg as i32 <= x && *end as i32 >= x))
+                .find(|(beg, end)| *beg <= y as usize && *end > y as usize)
         })
         .flatten()
 }
@@ -137,20 +135,19 @@ fn check_around(
     size: usize,
     game: &Box<Vec<&str>>,
 ) -> i64 {
-    let mut visited: Box<HashSet<(usize, usize)>> = Box::new(HashSet::new());
-    let matches = BOXES.iter().filter_map(|(x, y)| {
-        let lid = line_idx as i32 + x;
-        check_point(map, lid, cidx as i32 + y, size).map(|(beg, end)| (lid as usize, beg, end))
-    });
+    let matches = BOXES
+        .iter()
+        .filter_map(|(x, y)| {
+            let lid = line_idx as i32 + x;
+            check_point(map, lid, cidx as i32 + y, size)
+                .map(|(beg, end)| (lid as usize, *beg, *end))
+        })
+        .collect::<HashSet<_>>();
 
-    // for (lid, beg, end) in matches.clone() {
-    //     if visited.contains(&(*beg, *end)) {
-    //         continue;
-    //     }
-    // }
-    if matches.clone().collect::<Vec<_>>().len() == 2 {
+    if matches.clone().len() == 2 {
         matches
-            .map(|(lid, beg, end)| dbg!(game[lid][*beg..*end].parse::<i64>().unwrap()))
+            .iter()
+            .map(|(lid, beg, end)| game[*lid][*beg..*end].parse::<i64>().unwrap())
             .product::<i64>()
     } else {
         0
@@ -165,7 +162,7 @@ fn play2(lines: Vec<&str>) -> i64 {
     for (line_idx, row) in game.iter().enumerate() {
         for (cidx, c) in row.chars().enumerate() {
             if c == '*' {
-                result += dbg!(check_around(line_idx, cidx, &map, size, &game));
+                result += check_around(line_idx, cidx, &map, size, &game);
             }
         }
     }
@@ -174,9 +171,9 @@ fn play2(lines: Vec<&str>) -> i64 {
 }
 
 fn main() {
-    let contents = std::fs::read_to_string("data/test.txt").unwrap();
-    // let result = play(contents.lines().collect());
-    // dbg!(result);
+    let contents = std::fs::read_to_string("data/input.txt").unwrap();
+    let result = play(contents.lines().collect());
+    dbg!(result);
 
     let result2 = play2(contents.lines().collect());
     dbg!(result2);
