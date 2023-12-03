@@ -1,5 +1,5 @@
 # Compiled files
-/target/
+*/target/
 *.o
 *.out
 *.obj
@@ -14,7 +14,7 @@
 *.dylib
 
 # Rust binaries and build directories
-/target/
+*/target/
 
 # Miscellaneous
 *.swp
