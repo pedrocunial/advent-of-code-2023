@@ -1,4 +1,18 @@
-use std::collections::HashMap;
+use std::{
+    collections::{HashMap, HashSet},
+    vec,
+};
+
+const BOXES: [(i32, i32); 8] = [
+    (-1, -1),
+    (-1, 0),
+    (-1, 1),
+    (0, -1),
+    (0, 1),
+    (1, -1),
+    (1, 0),
+    (1, 1),
+];
 
 trait Valid {
     fn is_valid(&self, game: &Box<Vec<&str>>) -> bool;
@@ -97,52 +111,73 @@ fn build_map(lines: Vec<&str>) -> HashMap<usize, Vec<(usize, usize)>> {
     )
 }
 
-fn check_ranges(line_idx: usize, cidx: usize, map: &HashMap<usize, Vec<(usize, usize)>>) -> bool {
-    map[&line_idx].iter().any(|(b, e)| *b <= cidx && *e >= cidx)
+fn check_point(
+    map: &HashMap<usize, Vec<(usize, usize)>>,
+    x: i32,
+    y: i32,
+    size: usize,
+) -> Option<&(usize, usize)> {
+    if x < 0 || y < 0 || x >= size as i32 || y >= size as i32 {
+        return None;
+    }
+
+    map.get(&(x as usize))
+        .map(|ranges| {
+            dbg!(ranges
+                .iter()
+                .find(|(beg, end)| *beg as i32 <= x && *end as i32 >= x))
+        })
+        .flatten()
 }
 
-fn check_around(line_idx: usize, cidx: usize, map: &HashMap<usize, Vec<(usize, usize)>>) -> bool {
-    let mut count = 0;
-    let top = if line_idx == 0 {
-        false
-    } else {
-        check_ranges(line_idx - 1, cidx, &map)
-    };
-    let bottom = if line_idx == map.len() - 1 {
-        false
-    } else {
-        check_ranges(line_idx + 1, cidx, &map)
-    };
-    let before = if cidx == 0 {
-        false
-    } else {
-        check_ranges(line_idx, cidx - 1, &map)
-    };
-    let after = if cidx == map[&line_idx].len() - 1 {
-        false
-    } else {
-        check_ranges(line_idx, cidx + 1, &map)
-    };
+fn check_around(
+    line_idx: usize,
+    cidx: usize,
+    map: &HashMap<usize, Vec<(usize, usize)>>,
+    size: usize,
+    game: &Box<Vec<&str>>,
+) -> i64 {
+    let mut visited: Box<HashSet<(usize, usize)>> = Box::new(HashSet::new());
+    let matches = BOXES.iter().filter_map(|(x, y)| {
+        let lid = line_idx as i32 + x;
+        check_point(map, lid, cidx as i32 + y, size).map(|(beg, end)| (lid as usize, beg, end))
+    });
 
-    top || bottom || before || after
+    // for (lid, beg, end) in matches.clone() {
+    //     if visited.contains(&(*beg, *end)) {
+    //         continue;
+    //     }
+    // }
+    if matches.clone().collect::<Vec<_>>().len() == 2 {
+        matches
+            .map(|(lid, beg, end)| dbg!(game[lid][*beg..*end].parse::<i64>().unwrap()))
+            .product::<i64>()
+    } else {
+        0
+    }
 }
 
-fn play2(lines: Vec<&str>) -> i32 {
+fn play2(lines: Vec<&str>) -> i64 {
     let game = Box::new(lines.clone());
+    let size = lines[0].len();
     let map = build_map(lines);
+    let mut result = 0;
     for (line_idx, row) in game.iter().enumerate() {
         for (cidx, c) in row.chars().enumerate() {
             if c == '*' {
-                check_around(line_idx, cidx, &map);
+                result += dbg!(check_around(line_idx, cidx, &map, size, &game));
             }
         }
     }
 
-    0
+    result
 }
 
 fn main() {
     let contents = std::fs::read_to_string("data/test.txt").unwrap();
-    let result = play(contents.lines().collect());
-    dbg!(result);
+    // let result = play(contents.lines().collect());
+    // dbg!(result);
+
+    let result2 = play2(contents.lines().collect());
+    dbg!(result2);
 }
