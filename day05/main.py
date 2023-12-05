@@ -46,12 +46,27 @@ class Almanac:
             return match[0].to_dest(seed)
         return seed
 
-    def map_intersect(self, seeds: (int, int)):
-        """this is sheet"""
-        intersections = []
-        for m in self.maps:
-            intersection = m.intersect(seeds)
-        return None
+    def play(self, seeds: Iterable[int]) -> Iterable[int]:
+        current_seeds = seeds
+        next_level = []
+        for s in current_seeds:
+            matched = False
+            for m in self.maps:
+                intersect = m.intersect(s)
+                if intersect:
+                    matched = True
+                    next_level.append(m.range_to_dest(*intersect))
+                    if intersect[0] > s[0]:  # range before
+                        current_seeds.append((s[0], intersect[0]))
+                    if intersect[1] < s[1]:  # range after
+                        current_seeds.append((intersect[1], s[1]))
+                    # the maps don't overlap, if the reminder were to still match,
+                    # they would match in another iteration
+                    break
+            if not matched:
+                # TIL you could use else to catch a for loop that didn't break
+                next_level.append(s)
+        return next_level
 
 
 @dataclass
@@ -110,68 +125,10 @@ def part1(game: Game) -> int:
     return min_s
 
 
-def part2_ranges_test(game: Game2) -> int:
-    results = []
-    for seed_range in game.seeds:
-        ranges = [seed_range]
-        for almanac in game.almanacs:
-            new_range = []
-            for r in ranges:
-                result = almanac.map_intersect(r)
-                if result:
-                    m, intersect = result
-                    new_range.append(m.range_to_dest(*intersect))  # transformed range
-                    if intersect[0] > r[0]:  # range before
-                        new_range.append((r[0], intersect[0]))
-                    if intersect[1] < r[1]:  # range after
-                        new_range.append((intersect[1], r[1]))
-                else:
-                    new_range.append(r)
-            ranges = new_range
-        for r in ranges:
-            results.append(r)
-
-    return min(r[0] for r in results)
-
-
-def part2_old(game: Game2) -> int:
-    min_s = sys.maxsize
-    visited = set()
-    for seed_range in game.seeds:
-        for seed in seed_range:
-            if seed in visited:
-                continue
-            visited.add(seed)
-            s = seed
-            for almanac in game.almanacs:
-                s = almanac.map(s)
-            if s < min_s:
-                min_s = s
-    return min_s
-
-
 def part2(game: Game2) -> int:
     current_seeds = [*game.seeds]  # copy
     for almanac in game.almanacs:
-        next_level = []
-        for s in current_seeds:
-            matched = False
-            for m in almanac.maps:
-                intersect = m.intersect(s)
-                if intersect:
-                    matched = True
-                    next_level.append(m.range_to_dest(*intersect))
-                    if intersect[0] > s[0]:  # range before
-                        current_seeds.append((s[0], intersect[0]))
-                    if intersect[1] < s[1]:  # range after
-                        current_seeds.append((intersect[1], s[1]))
-                    # the maps don't overlap, if the reminder were to still match,
-                    # they would match in another iteration
-                    break
-            if not matched:
-                # TIL you could use else to catch a for loop that didn't break
-                next_level.append(s)
-        current_seeds = next_level
+        current_seeds = almanac.play(current_seeds)
     return min(r[0] for r in current_seeds)
 
 
