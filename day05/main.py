@@ -16,7 +16,10 @@ class Map:
         diff = seed - self.beg
         return self.dest + diff
 
-    def range_to_dest(self, seed_beg, seed_end) -> Collection[int]:
+    def range_to_dest(self, seed_beg, seed_end) -> (int, int):
+        """
+        self: (1, 10), dest: 44 -- input: (3, 5) -- output: (46, 48)
+        """
         diff = seed_beg - self.beg
         starting_point = diff + self.dest
         size = seed_end - seed_beg
@@ -26,7 +29,7 @@ class Map:
         sb, se = seed
         b = max(sb, self.beg)
         e = min(se, self.end)
-        if b <= e:
+        if b < e:
             return b, e
         return None
 
@@ -44,10 +47,10 @@ class Almanac:
         return seed
 
     def map_intersect(self, seeds: (int, int)):
+        """this is sheet"""
+        intersections = []
         for m in self.maps:
             intersection = m.intersect(seeds)
-            if intersection:
-                return m, intersection
         return None
 
 
@@ -59,7 +62,7 @@ class Game:
 
 @dataclass
 class Game2:
-    seeds: Collection[Iterable[int]]
+    seeds: Collection[(int, int)]
     almanacs: Collection[Almanac]
 
 
@@ -107,7 +110,7 @@ def part1(game: Game) -> int:
     return min_s
 
 
-def part2(game: Game2) -> int:
+def part2_ranges_test(game: Game2) -> int:
     results = []
     for seed_range in game.seeds:
         ranges = [seed_range]
@@ -147,13 +150,43 @@ def part2_old(game: Game2) -> int:
     return min_s
 
 
-fname = "data/input.txt"
-with open(fname, "r") as fin:
-    contents = fin.read()
+def part2(game: Game2) -> int:
+    current_seeds = [*game.seeds]  # copy
+    for almanac in game.almanacs:
+        next_level = []
+        for s in current_seeds:
+            matched = False
+            for m in almanac.maps:
+                intersect = m.intersect(s)
+                if intersect:
+                    matched = True
+                    next_level.append(m.range_to_dest(*intersect))
+                    if intersect[0] > s[0]:  # range before
+                        current_seeds.append((s[0], intersect[0]))
+                    if intersect[1] < s[1]:  # range after
+                        current_seeds.append((intersect[1], s[1]))
+                    # the maps don't overlap, if the reminder were to still match,
+                    # they would match in another iteration
+                    break
+            if not matched:
+                # TIL you could use else to catch a for loop that didn't break
+                next_level.append(s)
+        current_seeds = next_level
+    return min(r[0] for r in current_seeds)
 
-parsed = parse(contents)
-result = part1(parsed)
-print(result)
-parsed2 = parse2(contents)
-result2 = part2(parsed2)
-print(result2)
+
+def main():
+    fname = "data/input.txt"
+    with open(fname, "r") as fin:
+        contents = fin.read()
+
+    parsed = parse(contents)
+    result = part1(parsed)
+    print(result)
+    parsed2 = parse2(contents)
+    result2 = part2(parsed2)
+    print(result2)
+
+
+if __name__ == "__main__":
+    main()

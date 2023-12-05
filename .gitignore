@@ -1,4 +1,5 @@
-# Compiled files
+#
+Compiled files
 */target/
 *.o
 *.out
@@ -20,3 +21,5 @@
 *.swp
 Thumbs.db
 
+# python
+*__pycache__*
