@@ -28,7 +28,6 @@ function score({ time, distance }: Race): number {
   // prolly a binary search would o better here
   let result = 0;
   // prolly could be array method?
-  let matched = false;
   for (let i = 0; i < time; i++) {
     const timeLeft = time - i;
     if (i * timeLeft > distance) {
