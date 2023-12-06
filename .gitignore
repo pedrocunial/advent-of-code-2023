@@ -1,4 +1,4 @@
-#
+
 Compiled files
 */target/
 *.o
@@ -23,3 +23,6 @@ Thumbs.db
 
 # python
 *__pycache__*
+
+# js
+*node_modules*
