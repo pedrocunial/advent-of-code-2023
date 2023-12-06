@@ -1,5 +1,7 @@
+# advent of code inputs
+*/data/
 
-Compiled files
+# Compiled files
 */target/
 *.o
 *.out
@@ -25,4 +27,4 @@ Thumbs.db
 *__pycache__*
 
 # js
-*node_modules*
+*node_modules
