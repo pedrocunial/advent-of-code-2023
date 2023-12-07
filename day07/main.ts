@@ -70,7 +70,7 @@ class Input {
     return {
       hand: this.hand,
       bid: this.bid,
-      ranking: this.ranking(calcPlayRankingNonRepeating),
+      ranking: this.ranking(calcPlayWithJoker),
     };
   }
 
@@ -89,7 +89,7 @@ class Input {
   }
 }
 
-function calcPlayRankingNonRepeating(cards: Record<Suit, number>): number {
+function calcPlayWithJoker(cards: Record<Suit, number>): number {
   const inc = cards["J"] ?? 0;
   const [suit, amount] = Object.keys(cards)
     .filter((k) => k != "J")
@@ -109,34 +109,7 @@ function calcPlayRankingNonRepeating(cards: Record<Suit, number>): number {
   const newMax = amount + inc;
   const updated = { ...cards, [suit]: newMax, J: 0 };
 
-  const rank = cardsToRanking(updated, suit, newMax);
-  return rank;
-}
-
-function calcPlayRanking2(cards: Record<Suit, number>): number {
-  const inc = cards["J"] ?? 0;
-  const updated = Object.keys(cards)
-    .filter((k) => k != "J")
-    .reduce(
-      (acc, curr) => ({ ...acc, [curr]: cards[curr] + inc }),
-      {} as Record<Suit, number>
-    );
-  const [suit, amount] = Object.keys(updated).reduce(
-    (prev, suit: Suit) => {
-      const amount = updated[suit];
-      const [_, prevAmount] = prev;
-
-      if (prevAmount > amount) {
-        return prev;
-      }
-      return [suit, updated[suit]] as const;
-    },
-    ["J" as Suit, 0] as const
-  );
-
-  const play = inc >= 5 ? cards : updated; // handle 5 jokers
-  const rank = cardsToRanking(play, suit, amount || inc);
-  return rank;
+  return cardsToRanking(updated, suit, newMax);
 }
 
 function calcPlayRanking(cards: Record<Suit, number>): number {
@@ -229,9 +202,7 @@ function part2(inputs: Input[]): number {
   return inputs
     .map((x) => x.toPlay2())
     .toSorted((x, y) => calcBetterPlay(x, y, SUITS2))
-    .map((x, idx) => {
-      return [x.bid, idx + 1];
-    }) // idx -> multiplier
+    .map((x, idx) => [x.bid, idx + 1]) // idx -> multiplier
     .reduce((acc, [bid, multiplier]) => acc + bid * multiplier, 0);
 }
 
