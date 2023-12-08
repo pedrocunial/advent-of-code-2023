@@ -147,7 +147,6 @@ function part2(game: SpookyGame, goal: string = "Z"): number {
 
 function part2Fast(game: SpookyGame, goal: string = "Z"): number {
   // this can be solved by find the LCM of the number of moves for each node (MMC for by BR folks)
-  let moveCounter = 0;
   let { nodes, move } = game;
   const multipliers = nodes.map((node) => singlePart2({ node, move }, goal));
   return multipliers.reduce((acc, curr) => lcm(acc, curr), 1);
