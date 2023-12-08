@@ -109,18 +109,6 @@ function parseSpookyGame(contents: string): SpookyGame {
   return { move: initialMove, nodes: initialNodes };
 }
 
-function singlePart2(game: Game, goal: string = "Z"): number {
-  let moveCounter = 0;
-  let { node, move } = game;
-  while (!node.name.endsWith(goal)) {
-    moveCounter++;
-    node = node[move.current];
-    move = move.next;
-  }
-
-  return moveCounter;
-}
-
 function gcd(a: number, b: number): number {
   return a === 0 ? b : gcd(b % a, a);
 }
@@ -128,12 +116,17 @@ function gcd(a: number, b: number): number {
 function lcm(a: number, b: number): number {
   return (a * b) / gcd(a, b);
 }
+function part2IndividualCompletion(name: string): boolean {
+  return name.endsWith("Z");
+}
 
 function part2(game: SpookyGame, goal: string = "Z"): number {
   // this can be solved by find the LCM of the number of moves for each node (MMC for by BR folks)
   let moveCounter = 0;
   let { nodes, move } = game;
-  const multipliers = nodes.map((node) => singlePart2({ node, move }, goal));
+  const multipliers = nodes.map((node) =>
+    part1({ node, move }, part2IndividualCompletion)
+  );
   let curr = Math.max(...multipliers);
   const max = multipliers.reduce((acc, curr) => acc * curr, 1);
   // a bit brute forcey
@@ -148,14 +141,23 @@ function part2(game: SpookyGame, goal: string = "Z"): number {
 function part2Fast(game: SpookyGame, goal: string = "Z"): number {
   // this can be solved by find the LCM of the number of moves for each node (MMC for by BR folks)
   let { nodes, move } = game;
-  const multipliers = nodes.map((node) => singlePart2({ node, move }, goal));
+  const multipliers = nodes.map((node) =>
+    part1({ node, move }, part2IndividualCompletion)
+  );
   return multipliers.reduce((acc, curr) => lcm(acc, curr), 1);
 }
 
-function part1(game: Game, goal: string = "ZZZ"): number {
+function part1Completed(name: string): boolean {
+  return name === "ZZZ";
+}
+
+function part1(
+  game: Game,
+  isCompleted: (name: string) => boolean = part1Completed
+): number {
   let moveCounter = 0;
   let { node, move } = game;
-  while (node.name !== goal) {
+  while (!isCompleted(node.name)) {
     moveCounter++;
     node = node[move.current];
     move = move.next;
