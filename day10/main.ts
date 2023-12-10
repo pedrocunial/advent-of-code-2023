@@ -239,6 +239,16 @@ function buildLoopBoard(board: Board): LoopBoard {
     loopBoard[y + 1][x + 1] = 1;
   }
 
+  // dbg
+  board.forEach((line, i) =>
+    line.forEach((tile, j) => {
+      if (tile !== "." && loopBoard[i + 1][j + 1] === 0)
+        console.log("mismatch");
+      if (tile === "." && loopBoard[i + 1][j + 1] !== 0)
+        console.log("positive mismatch");
+    })
+  );
+
   return loopBoard;
 }
 
@@ -247,13 +257,21 @@ function part2(board: Board): number {
   const loopBoard = buildLoopBoard(board);
   // dfs from (0, 0) until non '.'
   const totalArea = loopBoard.length * loopBoard[0].length;
+  const padding = (loopBoard[0].length + 2) * 2 + loopBoard.length * 2;
   const visited = new Set<string>();
   const outterArea = dfs(loopBoard, 0, 0, visited);
-  const wallArea = loopBoard.reduce(
-    (acc, line) => acc + line.filter((x) => x !== 0).length,
+  const wallArea = board.reduce(
+    (acc, line) => acc + line.filter((x) => x !== ".").length,
     0
   );
-  // return area(withPadding) - dfs() - area(wall)
+
+  // return area(withPadding) - dfs() - area(wall) - padding
+  console.log(
+    loopBoard.join("\n"),
+    visited.size,
+    loopBoard.length,
+    loopBoard[0].length
+  );
   return totalArea - outterArea - wallArea;
 }
 
