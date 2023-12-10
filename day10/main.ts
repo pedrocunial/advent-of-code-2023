@@ -112,6 +112,47 @@ function compareCoordinates(a: Coordinate, b: Coordinate): boolean {
   return a.x === b.x && a.y === b.y;
 }
 
+function checkVertical(
+  from: number,
+  to: number,
+  x: number,
+  board: Board
+): number {
+  let count = 0;
+  for (let y = from; y < to; y++) {
+    if (board[y][x] === "-") count++;
+  }
+  return count;
+}
+
+function checkHorizontal(
+  from: number,
+  to: number,
+  y: number,
+  board: Board
+): number {
+  let count = 0;
+  for (let x = from; x < to; x++) {
+    if (board[y][x] === "|") count++;
+  }
+  return count;
+}
+
+function isEnclosed(x: number, y: number, board: Board): number {
+  if (y <= 0 || y >= board.length - 1 || x <= 0 || x >= board[0].length)
+    return 0;
+  if (board[y][x] !== ".") return 0;
+  // defined by having an odd number of | or - around each direction
+  return [
+    checkVertical(0, y - 1, x, board), // above
+    checkVertical(y + 1, board.length, x, board), // below
+    checkHorizontal(0, x - 1, y, board), // left
+    checkHorizontal(x + 1, board[0].length, y, board), // right
+  ].some((count) => count % 2 === 1)
+    ? 1
+    : 0;
+}
+
 function part1(board: Board): number {
   // find S
   const start = findStart(board);
@@ -126,11 +167,30 @@ function part1(board: Board): number {
   return steps / 2;
 }
 
+function part2(board: Board): number {
+  const points = [];
+  const start = findStart(board);
+  points.push({ x: start.x, y: start.y });
+  let curr = firstMove(board, start);
+  let steps = 1;
+  // cycle until back at S
+  while (!compareCoordinates(start, curr)) {
+    steps++;
+    points.push({ x: curr.x, y: curr.y });
+    curr = nextPipe(curr, board);
+  }
+
+  // TODO
+  // return steps / 2
+  return steps / 2;
+}
+
 async function main() {
   let filename = Bun.argv[2] ?? "data/test.txt";
   let contents = await Bun.file(filename).text();
   let parsed = parse(contents);
-  console.log("part 1: ", part1(parsed));
+  // console.log("part 1: ", part1(parsed));
+  console.log("part 2: ", part2(parsed));
 }
 
 main();
