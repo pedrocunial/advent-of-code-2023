@@ -19,6 +19,12 @@ type PipeOptions = Partial<Record<Direction, PipedThrough>>;
 type Board = BoardKeys[][];
 type DirectedMove = Coordinate & { direction: Direction };
 
+// part 2
+type Wall = 1;
+type Ground = 0;
+type LoopBoardTile = Wall | Ground;
+type LoopBoard = LoopBoardTile[][];
+
 const PIPES: Record<Pipe, PipeOptions> = {
   "|": {
     top: { x: 0, y: 1, direction: "top" },
@@ -74,10 +80,12 @@ function firstMove(board: Board, start: Coordinate): DirectedMove {
       if (y === 0 && x === 0) continue;
       if (!(x === 0 || y === 0)) continue; // can only move in one direction
       const curr = { x: start.x + x, y: start.y + y };
+      if (curr.x < 0 || curr.y < 0) continue;
       const pipe = board[curr.y][curr.x];
+      const direction = diffToDirection(x, y);
+      if (!PIPES[pipe][direction]) continue;
 
-      if (pipe && pipe !== ".")
-        return { ...curr, direction: diffToDirection(x, y) };
+      if (pipe && pipe !== ".") return { ...curr, direction };
     }
   }
 
@@ -98,7 +106,7 @@ function nextPipe(curr: DirectedMove, board: Board): DirectedMove {
     throw new Error(
       `no next pipe found for ${JSON.stringify(curr)} in direction ${
         curr.direction
-      }`
+      } and tile ${pipe}`
     );
 
   return {
@@ -167,29 +175,93 @@ function part1(board: Board): number {
   return steps / 2;
 }
 
-function part2(board: Board): number {
-  const points = [];
+function baseLoopBoard(board: Board, filler: LoopBoardTile = 0): LoopBoard {
+  const rowLength = board[0].length + 2;
+  const result = [];
+  for (let i = 0; i < board.length + 2; i++) {
+    result[i] = [];
+    for (let j = 0; j < rowLength; j++) {
+      result[i][j] = filler;
+    }
+  }
+  return result;
+}
+
+const toKey = (x: number, y: number) => `${x},${y}`;
+
+function dfs(
+  board: LoopBoard,
+  y: number,
+  x: number,
+  visited: Set<string>
+): number {
+  if (
+    visited.has(toKey(x, y)) ||
+    x < 0 ||
+    x >= board[0].length ||
+    y < 0 ||
+    y >= board.length
+  )
+    return 0;
+  if (board[y][x] !== 0) return 0;
+
+  visited.add(toKey(x, y));
+  return (
+    1 +
+    dfs(board, y - 1, x, visited) +
+    dfs(board, y + 1, x, visited) +
+    dfs(board, y, x - 1, visited) +
+    dfs(board, y, x + 1, visited)
+  );
+}
+
+function findLoop(board: Board): Coordinate[] {
+  const loop: Coordinate[] = [];
   const start = findStart(board);
-  points.push({ x: start.x, y: start.y });
+  loop.push({ x: start.x, y: start.y });
+
   let curr = firstMove(board, start);
   let steps = 1;
-  // cycle until back at S
   while (!compareCoordinates(start, curr)) {
+    loop.push({ x: curr.x, y: curr.y });
+
     steps++;
-    points.push({ x: curr.x, y: curr.y });
     curr = nextPipe(curr, board);
   }
+  return loop;
+}
 
-  // TODO
-  // return steps / 2
-  return steps / 2;
+function buildLoopBoard(board: Board): LoopBoard {
+  const loopCoords = findLoop(board);
+  // add padding
+  const loopBoard = baseLoopBoard(board);
+  for (const { x, y } of loopCoords) {
+    loopBoard[y + 1][x + 1] = 1;
+  }
+
+  return loopBoard;
+}
+
+function part2(board: Board): number {
+  // update board to only contain the loop
+  const loopBoard = buildLoopBoard(board);
+  // dfs from (0, 0) until non '.'
+  const totalArea = loopBoard.length * loopBoard[0].length;
+  const visited = new Set<string>();
+  const outterArea = dfs(loopBoard, 0, 0, visited);
+  const wallArea = loopBoard.reduce(
+    (acc, line) => acc + line.filter((x) => x !== 0).length,
+    0
+  );
+  // return area(withPadding) - dfs() - area(wall)
+  return totalArea - outterArea - wallArea;
 }
 
 async function main() {
   let filename = Bun.argv[2] ?? "data/test.txt";
   let contents = await Bun.file(filename).text();
   let parsed = parse(contents);
-  // console.log("part 1: ", part1(parsed));
+  console.log("part 1: ", part1(parsed));
   console.log("part 2: ", part2(parsed));
 }
 
